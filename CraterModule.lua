@@ -1,5 +1,9 @@
 --!strict
 
+--[[
+Made by Striker2783
+]]
+
 local module = {}
 module.__index = module
 module.IgnoreList = {}
@@ -58,6 +62,9 @@ local DefaultSettings = {
 
 		CraterRockAmount = 10;
 		DespawnTime = 2;
+		
+		AlwaysOnGround = true;
+		MaxElevation = 20;
 
 		Parent = workspace;
 
@@ -74,7 +81,7 @@ local DefaultSettings = {
 			Color = Color3.fromRGB(68, 68, 68);
 			Material = Enum.Material.Rock;
 			Transparency = 0;
-		}
+		};
 	};
 
 	General = {
@@ -137,7 +144,7 @@ end
 
 function module.rayCastDown(self: Crater, Position: Vector3) : RaycastResult?
 	local RayCastParams = self:getRayCastParams()
-	local Ray1 = workspace:Raycast(Position + Vector3.new(0, 1, 0), Vector3.new(0, -100, 0), RayCastParams)
+	local Ray1 = workspace:Raycast(Position + Vector3.new(0, self.Settings.Crater.MaxElevation, 0), Vector3.new(0, -100, 0), RayCastParams)
 	if Ray1 then
 		if self.Settings.General.RayCastIgnoresHumanoids and Ray1.Instance:IsA("BasePart") and self.hasHumanoid(Ray1.Instance) then
 			self:ignoreHumanoid(Ray1.Instance)
@@ -188,7 +195,13 @@ function module.startCrater(self: Crater, Position: Vector3, Radius: number, roc
 
 	for i = 1, RockAmount do
 		local Pos = self:getCraterRockPosiiton(Position, i, RockAmount, Radius, rockSize)
-
+		if self.Settings.Crater.AlwaysOnGround then
+			Representation = self:getCraterRepresentation(Pos)
+			local Ray1 = self:rayCastDown(Pos)
+			if Ray1 then
+				Pos = Vector3.new(Pos.X, Ray1.Position.Y, Pos.Z)
+			end
+		end
 		self:createCraterRock(Pos, rockSize, Representation)
 	end
 end
@@ -196,6 +209,7 @@ end
 function module.getCraterRockPosiiton(self: Crater, Position: Vector3, Number: number, rockNumber: number, Radius: number, Size: number)
 	local X = math.cos(Number * Size * 360 / rockNumber) * Radius
 	local Z = math.sin(Number * Size * 360 / rockNumber) * Radius
+	local newPos = Position + Vector3.new(X, 0, Z)
 	return Position + Vector3.new(X, 0, Z)
 end
 
