@@ -112,11 +112,11 @@ local DefaultSettings = {
 		RayCastIgnoresHumanoids = true,
 	},
 }
-local function loop(original)
+local function deepCopy(original)
 	local copy = {}
 	for k, v in pairs(original) do
 		if type(v) == "table" then
-			v = loop(v)
+			v = deepCopy(v)
 		end
 		copy[k] = v
 	end
@@ -128,11 +128,11 @@ function module.copySettings(self: Crater)
 end
 -- Copies the settings
 function module.copySetting(settings: Settings)
-	return loop(settings) :: Settings
+	return deepCopy(settings) :: Settings
 end
 -- Copies the default settings
 function module.copyDefaultSettings(): Settings
-	return loop(DefaultSettings) :: Settings
+	return deepCopy(DefaultSettings) :: Settings
 end
 -- Creates a new Crater object
 function module.new(): Crater
