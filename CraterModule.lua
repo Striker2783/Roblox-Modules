@@ -9,6 +9,11 @@ module.__index = module
 -- Things to ignore when raycasting
 module.IgnoreList = {}
 
+export type ICrater = {
+	settings: Settings,
+	create: (self: Crater, Position: Vector3, Radius: number, rockSize: number, Ray: boolean?) -> (),
+}
+
 local TS = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 
@@ -110,6 +115,8 @@ local DefaultSettings = {
 		},
 		-- Whether the ray cast ignores humanoid or not
 		RayCastIgnoresHumanoids = true,
+		RayDirection = Vector3.new(0, -1, 0),
+		RayLength = 100,
 	},
 }
 local function deepCopy(original)
@@ -124,7 +131,7 @@ local function deepCopy(original)
 end
 -- Copies the settings of the crater module
 function module.copySettings(self: Crater)
-	return module.copySetting(self.Settings)
+	return module.copySetting(self.settings)
 end
 -- Copies the settings
 function module.copySetting(settings: Settings)
@@ -135,18 +142,18 @@ function module.copyDefaultSettings(): Settings
 	return deepCopy(DefaultSettings) :: Settings
 end
 -- Creates a new Crater object
-function module.new(): Crater
+function module.new(): ICrater
 	local self: init = {
-		Settings = module.copyDefaultSettings(),
+		settings = module.copyDefaultSettings(),
 	}
 	setmetatable(self, module)
 
 	return self
 end
 -- Creates a new Crater object with the settings provided
-function module.newWithSettings(settings: Settings)
+function module.newWithSettings(settings: Settings): ICrater
 	local self: init = {
-		Settings = settings,
+		settings = settings,
 	}
 	setmetatable(self, module)
 
@@ -154,20 +161,20 @@ function module.newWithSettings(settings: Settings)
 end
 -- Loads the settings for the crater object
 function module.loadSettings(self: Crater, settings: Settings)
-	self.Settings = settings
+	self.settings = settings
 end
 -- Creates the crater, flying debris, and other stuff
-function module.create(self: Crater, Position: Vector3, Radius: number, rockSize: number, RayDown: boolean?)
+function module.create(self: Crater, Position: Vector3, Radius: number, rockSize: number, Ray: boolean?)
 	self:ignorePlayerParts()
-	if RayDown then
-		Position = self:getRayDownPosition(Position)
+	if Ray then
+		Position = self:getRayPosition(Position)
 	end
 
-	if self.Settings.Crater.On then
+	if self.settings.Crater.On then
 		self:startCrater(Position, Radius, rockSize)
 	end
 
-	if self.Settings.FlyingDebris.On then
+	if self.settings.FlyingDebris.On then
 		self:startFlyingDebris(Position, Radius, rockSize)
 	end
 end
@@ -183,30 +190,30 @@ function module.ignorePlayerParts(self: Crater)
 		table.insert(self.IgnoreList, v.Character)
 	end
 end
--- Ray Casts down
-function module.rayCastDown(self: Crater, Position: Vector3): RaycastResult?
+-- Ray Casts
+function module.rayCast(self: Crater, Position: Vector3): RaycastResult?
 	local RayCastParams = self:getRayCastParams()
 	local Ray1 = workspace:Raycast(
-		Position + Vector3.new(0, self.Settings.Crater.MaxElevation, 0),
-		Vector3.new(0, -100, 0),
+		Position + Vector3.new(0, self.settings.Crater.MaxElevation, 0),
+		self.settings.General.RayDirection * self.settings.General.RayLength,
 		RayCastParams
 	)
 	if Ray1 then
 		if
-			self.Settings.General.RayCastIgnoresHumanoids
+			self.settings.General.RayCastIgnoresHumanoids
 			and Ray1.Instance:IsA("BasePart")
 			and self.hasHumanoid(Ray1.Instance)
 		then
 			self:ignoreHumanoid(Ray1.Instance)
-			return self:rayCastDown(Position)
+			return self:rayCast(Position)
 		end
 		return Ray1
 	end
 	return
 end
--- Gets the position of RayCastDown
-function module.getRayDownPosition(self: Crater, Position: Vector3): Vector3
-	local Ray1 = self:rayCastDown(Position)
+-- Gets the position of RayCast
+function module.getRayPosition(self: Crater, Position: Vector3): Vector3
+	local Ray1 = self:rayCast(Position)
 	if Ray1 then
 		return Ray1.Position
 	else
@@ -245,9 +252,9 @@ function module.startCrater(self: Crater, Position: Vector3, Radius: number, roc
 
 	for i = 1, RockAmount do
 		local Pos = self:getCraterRockPosiiton(Position, i, RockAmount, Radius, rockSize)
-		if self.Settings.Crater.AlwaysOnGround then
+		if self.settings.Crater.AlwaysOnGround then
 			Representation = self:getCraterRepresentation(Pos)
-			local Ray1 = self:rayCastDown(Pos)
+			local Ray1 = self:rayCast(Pos)
 			if Ray1 then
 				Pos = Vector3.new(Pos.X, Ray1.Position.Y, Pos.Z)
 			end
@@ -271,7 +278,7 @@ function module.getCraterRockPosiiton(
 end
 -- Gets the amount of crater rocks to make
 function module.getRockAmount(self: Crater, Radius: number, rockSide: number): number
-	local CraterSeetings = self.Settings.Crater
+	local CraterSeetings = self.settings.Crater
 
 	if CraterSeetings.AutomaticRockAmount then
 		return self:calculateRockAmount(Radius, rockSide)
@@ -281,7 +288,7 @@ function module.getRockAmount(self: Crater, Radius: number, rockSide: number): n
 end
 -- Creates the FlyingDebris
 function module.startFlyingDebris(self: Crater, Position: Vector3, Radius: number, rockSize: number)
-	local FlyingDebrisSettings = self.Settings.FlyingDebris
+	local FlyingDebrisSettings = self.settings.FlyingDebris
 
 	local Amount = self:calculateFlyingDebrisAmount()
 	local Representation = self:getFlyingDebrisRepresentaiton(Position)
@@ -294,7 +301,7 @@ function module.startFlyingDebris(self: Crater, Position: Vector3, Radius: numbe
 end
 -- Creates a FlyingDebris rock
 function module.createFlyingDebris(self: Crater, Position: Vector3, Size: number, Representation: Representation): Part
-	local FlyingDebrisSettings = self.Settings.FlyingDebris
+	local FlyingDebrisSettings = self.settings.FlyingDebris
 
 	local AngularForce = self.createRandVector3(FlyingDebrisSettings.AngularForce)
 	local Force = self.createRandVector3(FlyingDebrisSettings.Force)
@@ -321,7 +328,7 @@ function module.createFlyingDebris(self: Crater, Position: Vector3, Size: number
 end
 -- Creates a crater rock
 function module.createCraterRock(self: Crater, Position: Vector3, Size: number, Representation: Representation)
-	local CraterSettings = self.Settings.Crater
+	local CraterSettings = self.settings.Crater
 
 	local newPart = self:createPartWithRepresentation(Position, Size, Representation)
 	newPart.Anchored = true
@@ -378,7 +385,7 @@ end
 -- Calculates number of rocks in the crater
 function module.calculateRockAmount(self: Crater, Radius: number, rockSize: number): number
 	local circumference = Radius * 2 * math.pi
-	return math.ceil(circumference * self.Settings.Crater.RocksPerRockSize / rockSize)
+	return math.ceil(circumference * self.settings.Crater.RocksPerRockSize / rockSize)
 end
 -- Adds this to the ignoreList
 function module.addToIgnoreList(Part: Instance)
@@ -386,12 +393,12 @@ function module.addToIgnoreList(Part: Instance)
 end
 
 function module.calculateFlyingDebrisAmount(self: Crater): number
-	local Settings = self.Settings.FlyingDebris
+	local Settings = self.settings.FlyingDebris
 	return math.random(Settings.MinAmount, Settings.MaxAmount)
 end
 
 function module.getFlyingDebrisRepresentaiton(self: Crater, Posiiton: Vector3): Representation
-	local FlyingDebrisSettings = self.Settings.FlyingDebris
+	local FlyingDebrisSettings = self.settings.FlyingDebris
 
 	if FlyingDebrisSettings.AccurateRepresentation then
 		return self:getRepresentation(Posiiton, "FlyingDebris")
@@ -401,7 +408,7 @@ function module.getFlyingDebrisRepresentaiton(self: Crater, Posiiton: Vector3): 
 end
 
 function module.getCraterRepresentation(self: Crater, Position: Vector3)
-	local CraterSettings = self.Settings.Crater
+	local CraterSettings = self.settings.Crater
 
 	if CraterSettings.AccurateRepresentation then
 		return self:getRepresentation(Position, "Crater")
@@ -411,7 +418,7 @@ function module.getCraterRepresentation(self: Crater, Position: Vector3)
 end
 
 function module.getRepresentation(self: Crater, Position: Vector3, Part: string): Representation
-	local RayResult = self:rayCastDown(Position)
+	local RayResult = self:rayCast(Position)
 	if RayResult and RayResult.Instance:IsA("BasePart") then
 		return {
 			Material = RayResult.Instance.Material,
@@ -425,12 +432,12 @@ end
 
 function module.getDefaultRepresentation(self: Crater, Part: string): Representation
 	if Part == "Crater" then
-		return self.Settings.Crater.DefaultRep
+		return self.settings.Crater.DefaultRep
 	elseif Part == "FlyingDebris" then
-		return self.Settings.FlyingDebris.DefaultRep
+		return self.settings.FlyingDebris.DefaultRep
 	end
 
-	return self.Settings.General.DefaultRep
+	return self.settings.General.DefaultRep
 end
 
 export type Vect3 = typeof(DefaultSettings.FlyingDebris.Force)
@@ -444,7 +451,7 @@ export type Representation = {
 export type Settings = typeof(DefaultSettings)
 
 export type init = {
-	Settings: Settings,
+	settings: Settings,
 }
 
 export type Crater = typeof(module) & init
