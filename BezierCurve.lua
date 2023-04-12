@@ -7,7 +7,13 @@ end
 
 type VectPoint = BasePart | Vector3
 
-function module.new(...: VectPoint): BezierVector3
+export type IBezier = {
+	tweenModel: (self: BezierCurve, model: Model, args: BasicTweenParams) -> RBXScriptConnection,
+	tweenPart: (self: BezierCurve, part: BasePart, args: BasicTweenParams) -> RBXScriptConnection,
+	points: { VectPoint },
+}
+
+function module.new(...: VectPoint): IBezier
 	local a: { VectPoint } = { ... }
 	local self: init = {
 		points = {},
@@ -36,6 +42,20 @@ function module.getPos(points: { Vector3 }, a: number): Vector3
 	return points[1]
 end
 
+function module.getCFrame(points: { Vector3 }, a: number): CFrame
+	local deg = #points - 1
+	assert(deg >= 0)
+	for _ = 1, deg - 1 do
+		local newPts: { Vector3 } = {}
+		for i = 1, #points - 1 do
+			local v = points[i]
+			newPts[i] = v:Lerp(points[i + 1], a)
+		end
+		points = newPts
+	end
+	return CFrame.new(points[1]:Lerp(points[2], a), points[2])
+end
+
 function module.convertToVects(points: { VectPoint }): { Vector3 }
 	local newTable: { Vector3 } = {}
 	for i = 1, #points do
@@ -49,11 +69,20 @@ function module.convertToVects(points: { VectPoint }): { Vector3 }
 	return newTable
 end
 
-function module.get(self: BezierVector3, t: number)
-	return self.getDS(self.points, t)
+function module.getC(self: BezierCurve, t: number)
+	return self.getDSC(self.points, t)
 end
 
-function module.getDS(pts: { VectPoint }, t: number)
+function module.getDSC(pts: { VectPoint }, t: number)
+	local newTb = module.convertToVects(pts)
+	return module.getCFrame(newTb, t)
+end
+
+function module.getP(self: BezierCurve, t: number)
+	return self.getDSP(self.points, t)
+end
+
+function module.getDSP(pts: { VectPoint }, t: number)
 	local newTb = module.convertToVects(pts)
 	return module.getPos(newTb, t)
 end
@@ -61,20 +90,35 @@ end
 export type BasicTweenParams = {
 	endEvent: () -> (),
 	time: number,
+	type: "CFrame" | "Vector3",
 }
-function module.tweenPart(self: BezierVector3, part: BasePart, args: BasicTweenParams)
-	return self:tween(function(pos)
-		part.Position = pos
-	end, args)
+function module.tweenPart(self: BezierCurve, part: BasePart, args: BasicTweenParams)
+	if args.type == "Vector3" then
+		return self:tween(function(pos)
+			part.Position = pos
+		end, args)
+	elseif args.type == "CFrame" then
+		return self:tween(function(cframe)
+			part.CFrame = cframe
+		end, args)
+	end
+	error("No args.type")
 end
 
-function module.tweenModel(self: BezierVector3, model: Model, args: BasicTweenParams)
-	return self:tween(function(pos)
-		model:MoveTo(pos)
-	end, args)
+function module.tweenModel(self: BezierCurve, model: Model, args: BasicTweenParams)
+	if args.type == "Vector3" then
+		return self:tween(function(pos)
+			model:MoveTo(pos)
+		end, args)
+	elseif args.type == "CFrame" then
+		return self:tween(function(cframe)
+			model:PivotTo(cframe)
+		end, args)
+	end
+	error("No args.type")
 end
 
-function module.tween(self: BezierVector3, setPos: (Vector3) -> (), args: BasicTweenParams)
+function module.tween(self: BezierCurve, setPos: (Vector3 | CFrame) -> (), args: BasicTweenParams)
 	local connection
 	local t = 0
 	connection = RunService.Heartbeat:Connect(function(dt)
@@ -84,7 +128,7 @@ function module.tween(self: BezierVector3, setPos: (Vector3) -> (), args: BasicT
 			args.endEvent()
 			return
 		end
-		local pos = self:get(t)
+		local pos = args.type == "CFrame" and self:getC(t) or self:getP(t)
 		setPos(pos)
 	end)
 	return connection
@@ -93,6 +137,6 @@ end
 export type init = {
 	points: { VectPoint },
 }
-export type BezierVector3 = init & typeof(module)
+export type BezierCurve = init & typeof(module)
 
 return module
