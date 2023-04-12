@@ -94,46 +94,42 @@ export type BasicTweenParams = {
 }
 function module.tweenPart(self: BezierCurve, part: BasePart, args: BasicTweenParams)
 	if args.type == "Vector3" then
-		return self:tween(function(pos)
+		return self:tweenPartThingy(part, args, function(pos)
 			part.Position = pos
-		end, args)
+		end)
 	elseif args.type == "CFrame" then
-		return self:tween(function(cframe)
+		return self:tweenPartThingy(part, args, function(cframe)
 			part.CFrame = cframe
-		end, args)
+		end)
 	end
 	error("No args.type")
-end
-
-local function pivot(m: Model, c: CFrame)
-	m:PivotTo(c)
-end
-
-local function move(m: Model, p: Vector3)
-	m:MoveTo(p)
 end
 
 function module.tweenModel(self: BezierCurve, model: Model, args: BasicTweenParams)
 	if args.type == "Vector3" then
-		return self:tweenModelThingy(model, args, move)
+		return self:tweenThingy(model, args, function(pos)
+			model:MoveTo(pos)
+		end)
 	elseif args.type == "CFrame" then
-		return self:tweenModelCFrame(model, args, pivot)
+		return self:tweenModelCFrame(model, args, function(cframe)
+			model:PivotTo(cframe)
+		end)
 	end
 	error("No args.type")
 end
 
-function module.tweenModelThingy(
+function module.tweenThingy(
 	self: BezierCurve,
-	model: Model,
+	part: BasePart | Model,
 	args: BasicTweenParams,
-	fn: (Model, CFrame | Vector3) -> ()
+	fn: (CFrame | Vector3) -> ()
 )
 	local connection
 	connection = self:tween(function(cframe)
-		if not model then
+		if not part then
 			connection:Disconnect()
 		end
-		fn(model, cframe)
+		fn(cframe)
 	end, args)
 	return connection
 end
