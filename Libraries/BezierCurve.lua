@@ -128,7 +128,7 @@ function module.tween(self: BezierCurve, setPos: (Vector3 | CFrame) -> (), args:
 			args.endEvent()
 			return
 		end
-		local pos = args.type == "CFrame" and self:getC(t) or self:getP(t)
+		local pos = args.type == "CFrame" and self:getC(t / args.time) or self:getP(t / args.time)
 		setPos(pos)
 	end)
 	return connection
