@@ -272,8 +272,8 @@ function module.getCraterRockPosiiton(
 	Radius: number,
 	Size: number
 )
-	local X = math.cos(Number * Size * 360 / rockNumber) * Radius
-	local Z = math.sin(Number * Size * 360 / rockNumber) * Radius
+	local X = math.cos(Number * Size * 2 * math.pi / rockNumber) * Radius
+	local Z = math.sin(Number * Size * 2 * math.pi / rockNumber) * Radius
 	local newPos = Position + Vector3.new(X, 0, Z)
 	return newPos
 end
