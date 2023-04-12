@@ -139,4 +139,6 @@ export type init = {
 }
 export type BezierCurve = init & typeof(module)
 
-return module
+return {
+	new = module.new,
+}

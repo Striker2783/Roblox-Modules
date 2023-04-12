@@ -457,4 +457,9 @@ export type init = {
 
 export type Crater = typeof(module) & init
 
-return module
+return {
+	copyDefaultSettings = module.copyDefaultSettings,
+	copySettings = module.copySetting,
+	new = module.new,
+	newWithSettings = module.newWithSettings,
+}
