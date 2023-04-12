@@ -11,7 +11,7 @@ module.IgnoreList = {}
 
 export type ICrater = {
 	settings: Settings,
-	create: (self: Crater, Position: Vector3, Radius: number, rockSize: number, Ray: boolean?) -> (),
+	create: (self: Crater, Position: Vector3, Radius: number, rockSize: number) -> (),
 }
 
 local TS = game:GetService("TweenService")
