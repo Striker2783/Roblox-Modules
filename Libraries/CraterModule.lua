@@ -115,6 +115,7 @@ local DefaultSettings = {
 		},
 		-- Whether the ray cast ignores humanoid or not
 		RayCastIgnoresHumanoids = true,
+		Ray = true,
 		RayDirection = Vector3.new(0, -1, 0),
 		RayLength = 100,
 	},
@@ -166,7 +167,7 @@ end
 -- Creates the crater, flying debris, and other stuff
 function module.create(self: Crater, Position: Vector3, Radius: number, rockSize: number, Ray: boolean?)
 	self:ignorePlayerParts()
-	if Ray then
+	if self.settings.General.Ray then
 		Position = self:getRayPosition(Position)
 	end
 
