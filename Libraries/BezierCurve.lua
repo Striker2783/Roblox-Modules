@@ -94,11 +94,11 @@ export type BasicTweenParams = {
 }
 function module.tweenPart(self: BezierCurve, part: BasePart, args: BasicTweenParams)
 	if args.type == "Vector3" then
-		return self:tweenPartThingy(part, args, function(pos)
+		return self:tweenThingy(part, args, function(pos)
 			part.Position = pos
 		end)
 	elseif args.type == "CFrame" then
-		return self:tweenPartThingy(part, args, function(cframe)
+		return self:tweenThingy(part, args, function(cframe)
 			part.CFrame = cframe
 		end)
 	end
