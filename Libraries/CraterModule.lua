@@ -1,5 +1,3 @@
---!strict
-
 --[[
 Made by Striker2783
 ]]
