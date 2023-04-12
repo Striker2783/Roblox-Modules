@@ -105,17 +105,37 @@ function module.tweenPart(self: BezierCurve, part: BasePart, args: BasicTweenPar
 	error("No args.type")
 end
 
+local function pivot(m: Model, c: CFrame)
+	m:PivotTo(c)
+end
+
+local function move(m: Model, p: Vector3)
+	m:MoveTo(p)
+end
+
 function module.tweenModel(self: BezierCurve, model: Model, args: BasicTweenParams)
 	if args.type == "Vector3" then
-		return self:tween(function(pos)
-			model:MoveTo(pos)
-		end, args)
+		return self:tweenModelThingy(model, args, move)
 	elseif args.type == "CFrame" then
-		return self:tween(function(cframe)
-			model:PivotTo(cframe)
-		end, args)
+		return self:tweenModelCFrame(model, args, pivot)
 	end
 	error("No args.type")
+end
+
+function module.tweenModelThingy(
+	self: BezierCurve,
+	model: Model,
+	args: BasicTweenParams,
+	fn: (Model, CFrame | Vector3) -> ()
+)
+	local connection
+	connection = self:tween(function(cframe)
+		if not model then
+			connection:Disconnect()
+		end
+		fn(model, cframe)
+	end, args)
+	return connection
 end
 
 function module.tween(self: BezierCurve, setPos: (Vector3 | CFrame) -> (), args: BasicTweenParams)
