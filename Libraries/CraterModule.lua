@@ -311,7 +311,6 @@ function module.createFlyingDebris(self: Crater, Position: Vector3, Size: number
 	newPart.CanTouch = FlyingDebrisSettings.Touch
 	newPart.Name = "Debris"
 	newPart.Massless = true
-	newPart.CastShadow = false
 
 	newPart.Parent = FlyingDebrisSettings.Parent
 
