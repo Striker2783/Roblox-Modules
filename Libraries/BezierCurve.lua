@@ -8,8 +8,7 @@ end
 type VectPoint = BasePart | Vector3
 
 export type IBezier = {
-	tweenModel: (self: BezierCurve, model: Model, args: BasicTweenParams) -> RBXScriptConnection,
-	tweenPart: (self: BezierCurve, part: BasePart, args: BasicTweenParams) -> RBXScriptConnection,
+	tween: (self: BezierCurve, partOrModel: Model | BasePart, args: BasicTweenParams) -> RBXScriptConnection,
 	points: { VectPoint },
 }
 
@@ -118,6 +117,15 @@ function module.tweenModel(self: BezierCurve, model: Model, args: BasicTweenPara
 	error("No args.type")
 end
 
+function module.tween(self: BezierCurve, partOrModel: Model | BasePart, args: BasicTweenParams)
+	if partOrModel:IsA("Model") then
+		return self:tweenModel(partOrModel, args)
+	elseif partOrModel:IsA("BasePart") then
+		return self:tweenPart(partOrModel, args)
+	end
+	error("No part or model")
+end
+
 function module.tweenThingy(
 	self: BezierCurve,
 	part: BasePart | Model,
@@ -125,7 +133,7 @@ function module.tweenThingy(
 	fn: (CFrame | Vector3) -> ()
 )
 	local connection
-	connection = self:tween(function(cframe)
+	connection = self:runTween(function(cframe)
 		if not part then
 			connection:Disconnect()
 		end
@@ -134,7 +142,7 @@ function module.tweenThingy(
 	return connection
 end
 
-function module.tween(self: BezierCurve, setPos: (Vector3 | CFrame) -> (), args: BasicTweenParams)
+function module.runTween(self: BezierCurve, setPos: (Vector3 | CFrame) -> (), args: BasicTweenParams)
 	local connection
 	local t = 0
 	connection = RunService.Heartbeat:Connect(function(dt)
