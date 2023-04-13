@@ -246,32 +246,27 @@ function module.getRayCastParams(self: Crater): RaycastParams
 end
 -- Starts the crater
 function module.startCrater(self: Crater, Position: Vector3, Radius: number, rockSize: number)
-	local RockAmount = self:getRockAmount(Radius, rockSize)
-	local Representation = self:getCraterRepresentation(Position)
+	local rockAmount = self:getRockAmount(Radius, rockSize)
+	local representation = self:getCraterRepresentation(Position)
 
-	for i = 1, RockAmount do
-		local Pos = self:getCraterRockPosiiton(Position, i, RockAmount, Radius, rockSize)
+	for i = 1, rockAmount do
+		local pos = self:getCraterRockPosiiton(Position, i, rockAmount, Radius)
 		if self.settings.Crater.AlwaysOnGround then
-			Representation = self:getCraterRepresentation(Pos)
-			local Ray1 = self:rayCast(Pos)
+			representation = self:getCraterRepresentation(pos)
+			local Ray1 = self:rayCast(pos)
 			if Ray1 then
-				Pos = Vector3.new(Pos.X, Ray1.Position.Y, Pos.Z)
+				pos = Vector3.new(pos.X, Ray1.Position.Y, pos.Z)
 			end
 		end
-		self:createCraterRock(Pos, rockSize, Representation)
+		self:createCraterRock(pos, rockSize, representation)
 	end
 end
 -- Gets the rock pos based on its arguments
-function module.getCraterRockPosiiton(
-	self: Crater,
-	Position: Vector3,
-	Number: number,
-	rockNumber: number,
-	Radius: number,
-	Size: number
-)
-	local X = math.cos(Number * Size * 2 * math.pi / rockNumber) * Radius
-	local Z = math.sin(Number * Size * 2 * math.pi / rockNumber) * Radius
+function module.getCraterRockPosiiton(self: Crater, Position: Vector3, ith: number, rockNumber: number, Radius: number)
+	local percent = ith / rockNumber
+	local revolution = 2 * math.pi
+	local X = math.cos(revolution * percent) * Radius
+	local Z = math.sin(revolution * percent) * Radius
 	local newPos = Position + Vector3.new(X, 0, Z)
 	return newPos
 end
