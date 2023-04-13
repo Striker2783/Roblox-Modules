@@ -354,11 +354,14 @@ function module.createPartWithRepresentation(
 
 	return newPart
 end
+local function floatRandom(min, max)
+	return math.random() * (max - min) + min
+end
 -- Creates a random vector3 value based on Vect3
 function module.createRandVector3(Table: Vect3): Vector3
-	local X = math.random(Table.MinX, Table.MaxX)
-	local Y = math.random(Table.MinY, Table.MaxY)
-	local Z = math.random(Table.MinZ, Table.MaxZ)
+	local X = floatRandom(Table.MinX, Table.MaxX)
+	local Y = floatRandom(Table.MinY, Table.MaxY)
+	local Z = floatRandom(Table.MinZ, Table.MaxZ)
 
 	return Vector3.new(X, Y, Z)
 end
@@ -455,4 +458,5 @@ return {
 	copySettings = module.copySetting,
 	new = module.new,
 	newWithSettings = module.newWithSettings,
+	addToIgnoreList = module.addToIgnoreList,
 }
