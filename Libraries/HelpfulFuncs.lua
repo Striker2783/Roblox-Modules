@@ -10,19 +10,38 @@ function module.findHumanoid(part: BasePart): Humanoid?
 	return char and char:FindFirstChildOfClass("Humanoid")
 end
 
-function module.touch(part: BasePart, fn: (BasePart) -> ())
-	return part.Touched:Connect(function(otherPart)
+function module.isPartOfIgnore(instance: Instance, ignore: { Instance }?)
+	ignore = ignore or {}
+	for _, v in ignore do
+		if v:IsAncestorOf(instance) then
+			return true
+		end
+	end
+	return false
+end
+
+export type HitParams = {
+	part: BasePart,
+	ignore: { Instance }?,
+}
+
+function module.touch(p: HitParams, fn: (BasePart) -> ())
+	p.ignore = p.ignore or {}
+	return p.part.Touched:Connect(function(otherPart)
 		if not otherPart or not otherPart.Parent then
+			return
+		end
+		if module.isPartOfIgnore(p.part, p.ignore) then
 			return
 		end
 		fn(otherPart)
 	end)
 end
 
-function module.firstTouch(part: BasePart, fn: (BasePart) -> ())
+function module.firstTouch(p: HitParams, fn: (BasePart) -> ())
 	local c
 	local bool = false
-	c = module.touch(part, function(otherPart)
+	c = module.touch(p, function(otherPart)
 		if bool then
 			return
 		end
@@ -33,8 +52,8 @@ function module.firstTouch(part: BasePart, fn: (BasePart) -> ())
 	return c
 end
 
-function module.touchHumanoid(part: BasePart, fn: (Humanoid) -> ())
-	return module.touch(part, function(oPart)
+function module.touchHumanoid(p: HitParams, fn: (Humanoid) -> ())
+	return module.touch(p, function(oPart)
 		local h = module.findHumanoid(oPart)
 		if not h then
 			return
@@ -43,9 +62,9 @@ function module.touchHumanoid(part: BasePart, fn: (Humanoid) -> ())
 	end)
 end
 
-function module.touchHumanoidOnce(part: BasePart, fn: (Humanoid) -> ())
+function module.touchHumanoidOnce(p: HitParams, fn: (Humanoid) -> ())
 	local t: { Humanoid } = {}
-	return module.touchHumanoid(part, function(h)
+	return module.touchHumanoid(p, function(h)
 		if table.find(t, h) then
 			return
 		end
@@ -54,10 +73,10 @@ function module.touchHumanoidOnce(part: BasePart, fn: (Humanoid) -> ())
 	end)
 end
 
-function module.touchFirstHumanoid(part: BasePart, fn: (Humanoid) -> ())
+function module.touchFirstHumanoid(p: HitParams, fn: (Humanoid) -> ())
 	local c
 	local bool = false
-	c = module.touchHumanoid(part, function(h)
+	c = module.touchHumanoid(p, function(h)
 		if bool then
 			return
 		end
