@@ -1,16 +1,20 @@
 local RunService = game:GetService("RunService")
-local module = {}
+local module = {
+	base64 = {},
+	hits = {},
+	others = {},
+}
 
-function module.randomFloat(min: number, max: number)
+function module.others.randomFloat(min: number, max: number)
 	return math.random() * (max - min) - min
 end
 
-function module.findHumanoid(part: BasePart): Humanoid?
+function module.hit.findHumanoid(part: BasePart): Humanoid?
 	local char = part:FindFirstAncestorOfClass("Model")
 	return char and char:FindFirstChildOfClass("Humanoid")
 end
 
-function module.isPartOfIgnore(instance: Instance, ignore: { Instance }?)
+function module.hit.isPartOfIgnore(instance: Instance, ignore: { Instance }?)
 	ignore = ignore or {}
 	for _, v in ignore do
 		if v:IsAncestorOf(instance) then
@@ -25,23 +29,23 @@ export type HitParams = {
 	ignore: { Instance }?,
 }
 
-function module.touch(p: HitParams, fn: (BasePart) -> ())
+function module.hit.touch(p: HitParams, fn: (BasePart) -> ())
 	p.ignore = p.ignore or {}
 	return p.part.Touched:Connect(function(otherPart)
 		if not otherPart or not otherPart.Parent then
 			return
 		end
-		if module.isPartOfIgnore(p.part, p.ignore) then
+		if module.hit.isPartOfIgnore(p.part, p.ignore) then
 			return
 		end
 		fn(otherPart)
 	end)
 end
 
-function module.firstTouch(p: HitParams, fn: (BasePart) -> ())
+function module.hit.firstTouch(p: HitParams, fn: (BasePart) -> ())
 	local c
 	local bool = false
-	c = module.touch(p, function(otherPart)
+	c = module.hit.touch(p, function(otherPart)
 		if bool then
 			return
 		end
@@ -52,9 +56,9 @@ function module.firstTouch(p: HitParams, fn: (BasePart) -> ())
 	return c
 end
 
-function module.touchHumanoid(p: HitParams, fn: (Humanoid) -> ())
-	return module.touch(p, function(oPart)
-		local h = module.findHumanoid(oPart)
+function module.hit.touchHumanoid(p: HitParams, fn: (Humanoid) -> ())
+	return module.hit.touch(p, function(oPart)
+		local h = module.hit.findHumanoid(oPart)
 		if not h then
 			return
 		end
@@ -62,9 +66,9 @@ function module.touchHumanoid(p: HitParams, fn: (Humanoid) -> ())
 	end)
 end
 
-function module.touchHumanoidOnce(p: HitParams, fn: (Humanoid) -> ())
+function module.hit.touchHumanoidOnce(p: HitParams, fn: (Humanoid) -> ())
 	local t: { Humanoid } = {}
-	return module.touchHumanoid(p, function(h)
+	return module.hit.touchHumanoid(p, function(h)
 		if table.find(t, h) then
 			return
 		end
@@ -73,10 +77,10 @@ function module.touchHumanoidOnce(p: HitParams, fn: (Humanoid) -> ())
 	end)
 end
 
-function module.touchFirstHumanoid(p: HitParams, fn: (Humanoid) -> ())
+function module.hit.touchFirstHumanoid(p: HitParams, fn: (Humanoid) -> ())
 	local c
 	local bool = false
-	c = module.touchHumanoid(p, function(h)
+	c = module.hit.touchHumanoid(p, function(h)
 		if bool then
 			return
 		end
@@ -87,10 +91,10 @@ function module.touchFirstHumanoid(p: HitParams, fn: (Humanoid) -> ())
 	return c
 end
 
-function module.getHumanoidsInPartArray(arr: { BasePart })
+function module.hit.getHumanoidsInPartArray(arr: { BasePart })
 	local humanoids: { Humanoid } = {}
 	for _, value in arr do
-		local h = module.findHumanoid(value)
+		local h = module.hit.findHumanoid(value)
 		if not h or table.find(humanoids, h) then
 			continue
 		end
@@ -99,15 +103,15 @@ function module.getHumanoidsInPartArray(arr: { BasePart })
 	return humanoids
 end
 
-function module.getHumanoidsInSphere(pos: Vector3, radius: number, overlap: OverlapParams)
-	return module.getHumanoidsInPartArray(workspace:GetPartBoundsInRadius(pos, radius, overlap))
+function module.hit.getHumanoidsInSphere(pos: Vector3, radius: number, overlap: OverlapParams)
+	return module.hit.getHumanoidsInPartArray(workspace:GetPartBoundsInRadius(pos, radius, overlap))
 end
 
-function module.getHumanoidsInRectangle(cframe: CFrame, size: Vector3, overlap: OverlapParams)
-	return module.getHumanoidsInPartArray(workspace:GetPartBoundsInBox(cframe, size, overlap))
+function module.hit.getHumanoidsInRectangle(cframe: CFrame, size: Vector3, overlap: OverlapParams)
+	return module.hit.getHumanoidsInPartArray(workspace:GetPartBoundsInBox(cframe, size, overlap))
 end
 -- Works For Rectangular Pieces
-function module.heartBeatHitOnce(part: BasePart | Model, overlap: OverlapParams, fn: (Humanoid) -> ())
+function module.hit.heartBeatHitOnce(part: BasePart | Model, overlap: OverlapParams, fn: (Humanoid) -> ())
 	local humanoids: { Humanoid } = {}
 	local function a(hits: { Humanoid })
 		for _, h in hits do
@@ -126,7 +130,7 @@ function module.heartBeatHitOnce(part: BasePart | Model, overlap: OverlapParams,
 	if part:IsA("BasePart") then
 		if part:IsA("Part") and part.Type == Enum.PartType.Ball then
 			return b(function()
-				return module.getHumanoidsInSphere(
+				return module.hit.getHumanoidsInSphere(
 					part.CFrame.Position,
 					math.min(part.Size.X, part.Size.Y, part.Size.Z),
 					overlap
@@ -134,15 +138,64 @@ function module.heartBeatHitOnce(part: BasePart | Model, overlap: OverlapParams,
 			end)
 		end
 		return b(function()
-			return module.getHumanoidsInRectangle(part.CFrame, part.Size, overlap)
+			return module.hit.getHumanoidsInRectangle(part.CFrame, part.Size, overlap)
 		end)
 	elseif part:IsA("Model") then
 		return b(function()
 			local cframe, size = part:GetBoundingBox()
-			return module.getHumanoidsInRectangle(cframe, size, overlap)
+			return module.hit.getHumanoidsInRectangle(cframe, size, overlap)
 		end)
 	end
 	error("Part is neither model nor basepart")
+end
+--
+function module.base64.to_base64(data)
+	local b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	return (
+		(data:gsub(".", function(x)
+			local r, b = "", x:byte()
+			for i = 8, 1, -1 do
+				r = r .. (b % 2 ^ i - b % 2 ^ (i - 1) > 0 and "1" or "0")
+			end
+			return r
+		end) .. "0000"):gsub("%d%d%d?%d?%d?%d?", function(x)
+			if #x < 6 then
+				return ""
+			end
+			local c = 0
+			for i = 1, 6 do
+				c = c + (x:sub(i, i) == "1" and 2 ^ (6 - i) or 0)
+			end
+			return b:sub(c + 1, c + 1)
+		end) .. ({ "", "==", "=" })[#data % 3 + 1]
+	)
+end
+
+-- this function converts base64 to string
+function module.base64.from_base64(data)
+	local b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	data = string.gsub(data, "[^" .. b .. "=]", "")
+	return (
+		data:gsub(".", function(x)
+			if x == "=" then
+				return ""
+			end
+			local r, f = "", (b:find(x) - 1)
+			for i = 6, 1, -1 do
+				r = r .. (f % 2 ^ i - f % 2 ^ (i - 1) > 0 and "1" or "0")
+			end
+			return r
+		end):gsub("%d%d%d?%d?%d?%d?%d?%d?", function(x)
+			if #x ~= 8 then
+				return ""
+			end
+			local c = 0
+			for i = 1, 8 do
+				c = c + (x:sub(i, i) == "1" and 2 ^ (8 - i) or 0)
+			end
+			return string.char(c)
+		end)
+	)
 end
 
 return module
