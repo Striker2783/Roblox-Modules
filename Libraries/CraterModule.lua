@@ -7,11 +7,6 @@ module.__index = module
 -- Things to ignore when raycasting
 module.IgnoreList = {}
 
-export type ICrater = {
-	settings: Settings,
-	create: (self: Crater, Position: Vector3, Radius: number, rockSize: number) -> (),
-}
-
 local TS = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 
@@ -141,22 +136,30 @@ function module.copyDefaultSettings(): Settings
 	return deepCopy(DefaultSettings) :: Settings
 end
 -- Creates a new Crater object
-function module.new(): ICrater
+function module.new()
 	local self: init = {
 		settings = module.copyDefaultSettings(),
 	}
 	setmetatable(self, module)
 
-	return self
+	return self:returnInterface()
 end
 -- Creates a new Crater object with the settings provided
-function module.newWithSettings(settings: Settings): ICrater
+function module.newWithSettings(settings: Settings)
 	local self: init = {
 		settings = settings,
 	}
 	setmetatable(self, module)
 
-	return self
+	return self:returnInterface()
+end
+function module.returnInterface(self: Crater)
+	return {
+		settings = self.settings,
+		copySettings = self.copySettings,
+		loadSettings = self.loadSettings,
+		create = self.create,
+	}
 end
 -- Loads the settings for the crater object
 function module.loadSettings(self: Crater, settings: Settings)
