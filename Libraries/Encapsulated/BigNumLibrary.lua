@@ -124,6 +124,18 @@ function module:__div(o: BigNumLibrary)
 	return module.new(true, self.num / o.num, self.mag - o.mag, self.format):goToStandard()
 end
 
+function module:toNumber()
+	if self.mag > 308 then
+		error("Too big of a number")
+	end
+	return self:sign() * self.num * 10 ^ self.mag
+end
+
+function module:__pow(o: BigNumLibrary)
+	local log10 = self.newFromNum(self:log10()) * o
+	return module.newFromLog10(log10:toNumber())
+end
+
 function module:getInit(): init
 	return {
 		positive = self.positive,
@@ -150,11 +162,15 @@ function module.newFromNum(num: number)
 	return module.new(pos, num, mag)
 end
 
-function module:log10()
-	return self:pos() * math.log10(self.num) + self.mag
+function module.newFromLog10(log10: number)
+	return module.new(true, 10 ^ (log10 % 1), math.floor(log10))
 end
 
-function module:pos()
+function module:log10()
+	return self:sign() * math.log10(self.num) + self.mag
+end
+
+function module:sign()
 	return (self.positive and 1 or -1)
 end
 
@@ -192,5 +208,6 @@ return {
 	newFromInit = module.newFromInit,
 	new = module.new,
 	newFromNum = module.newFromNum,
+	newFromLog10 = module.newFromLog10,
 	FORMATS = FORMATS,
 }
