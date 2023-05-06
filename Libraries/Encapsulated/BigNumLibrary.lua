@@ -8,10 +8,11 @@ local FORMATS = {
 
 function module:__tostring()
 	local str = self.positive and "" or "-"
-	if -4 < self.mag and self.mag < 4 then
+	if -4 < self.mag and self.mag < 0 then
+		return str .. string.format("%.3f", self.num * 10 ^ self.mag)
+	elseif self.mag < 4 then
 		return str .. string.format("%d", self.num * 10 ^ self.mag)
-	end
-	if self.format == FORMATS.SCIENTIFIC then
+	elseif self.format == FORMATS.SCIENTIFIC then
 		return str .. string.format("%.2fe%d", self.num, self.mag)
 	end
 	return str
@@ -42,11 +43,7 @@ function module:__add(o: BigNumLibrary)
 		local diffMag = self.mag - o.mag
 		local oNum = o.num / 10 ^ diffMag
 		new.num += oNum
-		if new.num >= 10 then
-			new.num /= 10
-			new.mag += 1
-		end
-		return new
+		return new:goToStandard()
 	elseif not self.positive and not self.positive then
 		return -(-self + -o)
 	else
@@ -56,11 +53,7 @@ function module:__add(o: BigNumLibrary)
 			local diffMag = self.mag - o.mag
 			local oNum = o.num / 10 ^ diffMag
 			new.num -= oNum
-			while new.num < 1 do
-				new.num *= 10
-				new.mag -= 1
-			end
-			return new
+			return new:goToStandard()
 		else
 			return -(-o - self)
 		end
@@ -102,6 +95,35 @@ function module:__eq(o: BigNumLibrary)
 	return self.positive == o.positive and self.num == o.num and self.mag == o.mag
 end
 
+function module:__mul(o: BigNumLibrary)
+	if (self.positive and not o.positive) or (not self.positive and o.positive) then
+		return -(self:abs() * o:abs())
+	end
+	return module.new(true, self.num * o.num, self.mag + o.mag, self.format):goToStandard()
+end
+
+function module:goToStandard()
+	while self.num >= 10 do
+		self.num /= 10
+		self.mag += 1
+	end
+	while self.num < 1 do
+		self.num *= 10
+		self.mag -= 1
+	end
+	return self
+end
+
+function module:__div(o: BigNumLibrary)
+	if o.num == 0 then
+		error("Cannot divide by 0")
+	end
+	if (self.positive and not o.positive) or (not self.positive and o.positive) then
+		return -(self:abs() / o:abs())
+	end
+	return module.new(true, self.num / o.num, self.mag - o.mag, self.format):goToStandard()
+end
+
 function module:getInit(): init
 	return {
 		positive = self.positive,
@@ -136,6 +158,10 @@ function module:pos()
 	return (self.positive and 1 or -1)
 end
 
+function module:isZero()
+	return self.num == 0
+end
+
 function module.newFromInit(params: init): BigNumLibrary
 	local self: init = {
 		positive = params.positive,
@@ -147,7 +173,7 @@ function module.newFromInit(params: init): BigNumLibrary
 		self.positive = true
 	end
 	setmetatable(self, module)
-	return self
+	return self:goToStandard()
 end
 
 function module:clone()
