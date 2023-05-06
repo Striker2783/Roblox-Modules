@@ -2,7 +2,7 @@
 Made by Striker2783
 ]]
 
-local module = {}
+local module: Crater = {}
 module.__index = module
 -- Things to ignore when raycasting
 module.IgnoreList = {}
@@ -141,37 +141,23 @@ function module.copyDefaultSettings(): Settings
 	return deepCopy(DefaultSettings) :: Settings
 end
 -- Creates a new Crater object
-function module.new()
+function module.new(): ICrater
 	local self: init = {
 		settings = module.copyDefaultSettings(),
 	}
 	setmetatable(self, module)
 
-	return self:returnFuncs()
+	return self
 end
 
-function module:returnFuncs()
-	return {
-		settings = self.settings,
-		copySettings = function()
-			return self:copySettings()
-		end,
-		create = function(Position: Vector3, Radius: number, rockSize: number, Ray: boolean?)
-			return self:create(Position, Radius, rockSize, Ray)
-		end,
-		loadSettings = function(settings: Settings)
-			return self:loadSettings(settings)
-		end,
-	}
-end
 -- Creates a new Crater object with the settings provided
-function module.newWithSettings(settings: Settings)
+function module.newWithSettings(settings: Settings): ICrater
 	local self: init = {
 		settings = settings,
 	}
 	setmetatable(self, module)
 
-	return self:returnFuncs()
+	return self
 end
 -- Loads the settings for the crater object
 function module:loadSettings(settings: Settings)

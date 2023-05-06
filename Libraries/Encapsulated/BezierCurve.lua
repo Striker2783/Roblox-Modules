@@ -1,5 +1,5 @@
 local RunService = game:GetService("RunService")
-local module: init & any = {}
+local module: BezierCurve = {}
 module.__index = module
 module.__tostring = function()
 	return "BezierCurve"
