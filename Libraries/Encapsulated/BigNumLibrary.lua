@@ -120,6 +120,22 @@ function module.new(pos: boolean?, num: number?, mag: number?, format: number?)
 	})
 end
 
+function module.newFromNum(num: number)
+	local pos = num >= 0 and true or false
+	local log10 = math.log10(math.abs(num))
+	local num = 10 ^ (log10 % 1)
+	local mag = math.floor(log10)
+	return module.new(pos, num, mag)
+end
+
+function module:log10()
+	return self:pos() * math.log10(self.num) + self.mag
+end
+
+function module:pos()
+	return (self.positive and 1 or -1)
+end
+
 function module.newFromInit(params: init): BigNumLibrary
 	local self: init = {
 		positive = params.positive,
@@ -149,5 +165,6 @@ export type BigNumLibrary = init & typeof(module)
 return {
 	newFromInit = module.newFromInit,
 	new = module.new,
+	newFromNum = module.newFromNum,
 	FORMATS = FORMATS,
 }
